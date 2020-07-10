@@ -24,52 +24,32 @@ public class SrvClient implements Runnable {
     ObjectOutputStream oosAgent;
     ObjectInputStream oisAgent;
     
-    public SrvClient (ObjectOutputStream oosAgent, ObjectInputStream oisAgent){
+    public SrvClient (Socket socket, ObjectOutputStream oosAgent, ObjectInputStream oisAgent){
+        this.socket = socket;
         this.oosAgent = oosAgent;
         this.oisAgent = oisAgent;
+        System.out.println("Экземпляр клиента создан");
     }
     
+    @Override
     public void run (){
-        try (ServerSocket srvSocket = new ServerSocket(7001)){
-            socket = srvSocket.accept();
-            oos = new ObjectOutputStream(socket.getOutputStream());
-            ois = new ObjectInputStream(socket.getInputStream());
-            ping();
-        } catch (IOException ex) {}
-    }
-    
-    private void ping (){
-        try (ObjectOutputStream oos = this.oos;
-                ObjectInputStream ois = this.ois){
+        try (ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+                ){
+            System.out.println("Потоки ввода вывода созданы");
             String ip;
             String line;
             while (true){
+                System.out.println("Ждем IP от клиента");
                 ip = (String)ois.readObject();
                 oosAgent.writeObject(ip);
-                oosAgent.flush();
                 line = "";
                 while (!(line.equals("END"))) {// reading output stream of the command
                     line = (String)oisAgent.readObject();
                     oos.writeObject(line);
-                    oos.flush();
                 }
             }
-            
-            /*Object ip = (Object)ois.readObject();
-            System.out.println("IP адрес получен");
-            srvAgent.ping(ip, oos);
-            System.out.println("IP отправлен в SrvAgent");*/
-            
-            /*oos.writeObject(ip);
-                System.out.println("IP отправлен агенту");
-                while (true){
-                    line = (String)ois.readObject();
-                    System.out.println(line);
-                }*/
-            } catch (IOException ex) {
-            System.out.println("Связь разорвана");
-            run();
-        } catch (ClassNotFoundException ex) {
+        } catch (IOException ex) {} catch (ClassNotFoundException ex) {
             Logger.getLogger(SrvClient.class.getName()).log(Level.SEVERE, null, ex);
         }
     }

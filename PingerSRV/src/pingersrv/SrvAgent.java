@@ -29,29 +29,33 @@ public class SrvAgent implements Runnable {
         this.srvClient = srvClient;
     }
     
+    public void setSocket (Socket socket){
+        this.socket = socket;
+    }
+    
     @Override
     public void run (){
-        try (ServerSocket srvSocket = new ServerSocket(7000)){
-            socket = srvSocket.accept();
-            oos = new ObjectOutputStream(socket.getOutputStream());
-            ois = new ObjectInputStream(socket.getInputStream());
-            waitClient(oos, ois);
+        try (Socket socket = this.socket;
+                ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+                ObjectInputStream ois = new ObjectInputStream(socket.getInputStream())
+                ){
+            while (true){
+                System.out.println("Ждем клиента");
+                try (ServerSocket srvSocket = new ServerSocket(7001)){
+                Socket socketclient = srvSocket.accept();
+                    System.out.println("Клиент подключился");
+                SrvClient srvclient = new SrvClient(socketclient, oos, ois);
+                Thread client = new Thread(srvclient);
+                client.start();
+                }
+            }
         } catch (IOException ex) {
             try {
                 Thread.sleep(10000);
             } catch (InterruptedException ex1) {
                 Logger.getLogger(SrvAgent.class.getName()).log(Level.SEVERE, null, ex1);
             }
-            run();
-        }
-    }
-    
-    public void waitClient (ObjectOutputStream oos, ObjectInputStream ois){
-        SrvClient srvclient;
-        while (true){
-            srvclient = new SrvClient(oos, ois);
-            Thread client = new Thread(srvclient);
-            client.start();
+            //run();
         }
     }
     
